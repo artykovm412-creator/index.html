@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Доска объявлений</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#1c1e21;--muted:#6b7280;--line:#e2e5ea;--accent:#2563eb;--danger:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1e2127;--text:#e8eaed;--muted:#9aa3af;--line:#2d323b;--accent:#4f8bff;--danger:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+.top{max-width:900px;margin:0 auto;padding:20px 0 8px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}h1{margin:0;font-size:1.6rem}h2{font-size:1.15rem;margin:0 0 12px}main{max-width:900px;margin:0 auto;padding-bottom:40px;display:grid;gap:24px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}form{display:grid;gap:12px}label{display:grid;gap:4px;font-size:.9rem;color:var(--muted)}input,textarea{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}input:focus,textarea:focus{outline:2px solid var(--accent)}.top input[type=search]{width:min(320px,100%)}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.row{grid-template-columns:1fr}}
+button{font:inherit;font-weight:600;cursor:pointer;border:0;border-radius:10px;padding:11px 16px;background:var(--accent);color:#fff}button:disabled{opacity:.6;cursor:default}button.link{background:none;color:var(--danger);padding:4px 0;font-weight:500;font-size:.9rem}.clear{background:var(--danger)}#preview{max-width:100%;max-height:220px;border-radius:10px;object-fit:cover}.error{color:var(--danger);margin:0}.muted{color:var(--muted)}.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}.ad{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}.ad img{width:100%;height:170px;object-fit:cover;display:block;background:var(--line)}.ad .body{padding:14px;display:grid;gap:6px;flex:1}.ad h3{margin:0;font-size:1.05rem;overflow-wrap:anywhere}.ad .price{font-weight:700;color:var(--accent)}.ad p{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}.ad .meta{font-size:.8rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;margin-top:auto}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.empty{padding:20px 0}
+</style>
+</head>
+<body>
+<header class="top">
+<h1>Доска объявлений</h1>
+<input id="search" type="search" placeholder="Поиск по объявлениям…" aria-label="Поиск">
+</header>
+<main>
+<section class="card">
+<h2>Новое объявление</h2>
+<form id="form" autocomplete="off">
+<label>Заголовок*<input name="title" maxlength="100" required placeholder="Например: Продам велосипед"></label>
+<label>Описание<textarea name="description" maxlength="2000" rows="4" placeholder="Подробности, состояние, место"></textarea></label>
+<div class="row"><label>Цена<input name="price" maxlength="30" placeholder="5000 сом"></label><label>Контакт<input name="contact" maxlength="100" placeholder="Телефон или Telegram"></label></div>
+<label>Фото<input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+<img id="preview" alt="Предпросмотр" hidden>
+<p id="error" class="error" role="alert" hidden></p>
+<div class="actions"><button id="submit" type="submit">Опубликовать</button><button id="clearAll" class="clear" type="button">Очистить все</button></div>
+</form>
+</section>
+<section><h2>Объявления</h2><div id="list" class="grid"></div><p id="empty" class="muted empty" hidden>Пока ничего нет.</p></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),form=$('#form'),list=$('#list'),empty=$('#empty'),errBox=$('#error'),submitBtn=$('#submit'),preview=$('#preview'),fileInput=$('#image'),search=$('#search');
+const KEY='doska_ads_v1';
+let imageData='';
+function getAds(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}}
+function saveAds(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function showError(msg){errBox.textContent=msg;errBox.hidden=!msg}
+function fmtDate(s){return new Date(s).toLocaleString('ru-RU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function render(){const q=search.value.trim().toLowerCase();const ads=getAds().filter(a=>(a.title+' '+a.description+' '+a.price+' '+a.contact).toLowerCase().includes(q));list.replaceChildren(...ads.map(ad=>{const card=document.createElement('article');card.className='ad';if(ad.image){const img=document.createElement('img');img.src=ad.image;img.alt=ad.title;img.loading='lazy';card.append(img)}const body=document.createElement('div');body.className='body';const h=document.createElement('h3');h.textContent=ad.title;body.append(h);if(ad.price){const p=document.createElement('div');p.className='price';p.textContent=ad.price;body.append(p)}if(ad.description){const p=document.createElement('p');p.textContent=ad.description;body.append(p)}if(ad.contact){const p=document.createElement('p');p.className='muted';p.textContent='Контакт: '+ad.contact;body.append(p)}const meta=document.createElement('div');meta.className='meta';const date=document.createElement('span');date.textContent=fmtDate(ad.created_at);meta.append(date);const del=document.createElement('button');del.className='link';del.type='button';del.textContent='Удалить';del.onclick=()=>removeAd(ad.id);meta.append(del);body.append(meta);card.append(body);return card}));empty.hidden=ads.length>0;empty.textContent=q?'Ничего не найдено.':'Пока ничего нет.'}
+function removeAd(id){if(!confirm('Удалить объявление?'))return;saveAds(getAds().filter(a=>a.id!==id));render()}
+fileInput.addEventListener('change',()=>{const f=fileInput.files[0];showError('');if(!f){imageData='';preview.hidden=true;return}if(f.size>5*1024*1024){showError('Фото должно быть не больше 5 МБ');fileInput.value='';return}const reader=new FileReader();reader.onload=()=>{imageData=reader.result;preview.src=imageData;preview.hidden=false};reader.readAsDataURL(f)})
+form.addEventListener('submit',e=>{e.preventDefault();showError('');submitBtn.disabled=true;const fd=new FormData(form);const title=String(fd.get('title')||'').trim(),description=String(fd.get('description')||'').trim(),price=String(fd.get('price')||'').trim(),contact=String(fd.get('contact')||'').trim();if(!title){showError('Укажите заголовок');submitBtn.disabled=false;return}if(title.length>100||description.length>2000||price.length>30||contact.length>100){showError('Проверьте длину заполненных полей');submitBtn.disabled=false;return}const ads=getAds();ads.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),title,description,price,contact,image:imageData||null,created_at:new Date().toISOString()});try{saveAds(ads);form.reset();imageData='';preview.removeAttribute('src');preview.hidden=true;render()}catch(err){showError('Не удалось сохранить объявление. Возможно, память браузера заполнена.')}finally{submitBtn.disabled=false}})
+$('#clearAll').onclick=()=>{if(getAds().length&&!confirm('Удалить ВСЕ объявления?'))return;localStorage.removeItem(KEY);render()};search.addEventListener('input',render);render();
+</script>
+</body>
+</html>
